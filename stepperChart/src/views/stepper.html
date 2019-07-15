@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>axis position</title>
+</head>
+
+<body>
+
+    <div id="plot-stepper"></div>
+    <table style="width:70%;margin-left:15%;margin-right:15%;">
+        <tr>
+            <th>X</th>
+            <th>Y</th>
+            <th>Z</th>
+        </tr>
+        <tr>
+            <td id="xpos" style="text-align:center;"></td>
+            <td id="ypos" style="text-align:center;"></td>
+            <td id="zpos" style="text-align:center;"></td>
+        </tr>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"
+        integrity="sha256-BJeo0qm959uMBGb65z40ejJYGSgR7REI4+CW1fNKwOg=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"
+        integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+
+        const socket = io.connect('http://192.168.43.236:3005');
+
+        socket.on('initStepper', axises => {
+            let initPos = {
+                created: [],
+                x: [],
+                y: [],
+                z: []
+            };
+            $.each(axises, (i, axis) => {
+                initPos.created[i] = new Date(axis.created);
+                initPos.x[i] = axis.xpos;
+                initPos.y[i] = axis.ypos;
+                initPos.z[i] = axis.zpos;
+            });
+            Plotly.plot(
+                'plot-stepper',
+                [
+                    {
+                        type: 'scatter3d',
+                        mode: 'lines',
+                        x: initPos.x,
+                        y: initPos.y,
+                        z: initPos.z,
+                        opacity: 0.9,
+                        line:
+                        {
+                            width: 5,
+                            color: 'rgb(255, 128, 0)',
+                            colorscale: 'Viridis'
+                        }
+                    }
+                ],
+                {
+                    title: 'axis position',
+                    scene:
+                    {
+                        aspectmode: 'data'
+                    },
+                }
+            );
+            let bx, by, bz;
+            bx = initPos.x[initPos.x.length - 1];
+            by = initPos.y[initPos.y.length - 1];
+            bz = initPos.z[initPos.z.length - 1];
+            if (typeof bx === 'undefined') {
+                bx = 0
+            }
+            if (typeof by === 'undefined') {
+                by = 0
+            }
+            if (typeof bz === 'undefined') {
+                bz = 0
+            }
+            document.getElementById("xpos").innerHTML = bx;
+            document.getElementById("ypos").innerHTML = by;
+            document.getElementById("zpos").innerHTML = bz;
+        });
+
+        socket.on('updateStepper', axises => {
+            let newPos = {
+                x: [],
+                y: [],
+                z: []
+            };
+            $.each(axises, (i, axis) => {
+                newPos.x[i] = axis.xpos;
+                newPos.y[i] = axis.ypos;
+                newPos.z[i] = axis.zpos;
+            });
+            Plotly.restyle(
+                'plot-stepper',
+                {
+                    x: [newPos.x],
+                    y: [newPos.y],
+                    z: [newPos.z]
+                }
+            );
+            let bx, by, bz;
+            bx = newPos.x[newPos.x.length - 1];
+            by = newPos.y[newPos.y.length - 1];
+            bz = newPos.z[newPos.z.length - 1];
+            if (typeof bx === 'undefined') {
+                bx = 0
+            }
+            if (typeof by === 'undefined') {
+                by = 0
+            }
+            if (typeof bz === 'undefined') {
+                bz = 0
+            }
+            document.getElementById("xpos").innerHTML = bx;
+            document.getElementById("ypos").innerHTML = by;
+            document.getElementById("zpos").innerHTML = bz;
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>pid</title>
+</head>
+
+<body>
+
+    <div id="plot-pid"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"
+        integrity="sha256-BJeo0qm959uMBGb65z40ejJYGSgR7REI4+CW1fNKwOg=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"
+        integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+
+        const socket = io.connect('http://192.168.43.236:3006');
+
+        renderTime = (dt) => {
+            // let date = new Date(Date.now() + millis);
+            let date = dt;
+            return date.getFullYear() +
+                '-' + ('0' + (date.getMonth() + 1)).slice(-2) +
+                '-' + ('0' + date.getDate()).slice(-2) +
+                ' ' + ('0' + date.getHours()).slice(-2) +
+                ':' + ('0' + date.getMinutes()).slice(-2) +
+                ':' + ('0' + date.getSeconds()).slice(-2);
+        }
+
+        socket.on('initSpindle', speeds => {
+            let initSpeed = {
+                created: [],
+                setpoint: [],
+                rpm: []
+            };
+            $.each(speeds, (i, speed) => {
+                initSpeed.created[i] = new Date(speed.created);
+                initSpeed.setpoint[i] = speed.setpoint;
+                initSpeed.rpm[i] = speed.rpm;
+            });
+            Plotly.newPlot(
+                'plot-pid',
+                [
+                    {
+                        name: 'set point',
+                        x: initSpeed.created,
+                        y: initSpeed.setpoint,
+                        type: 'scatter'
+                    },
+                    {
+                        name: 'rpm',
+                        x: initSpeed.created,
+                        y: initSpeed.rpm,
+                        type: 'scatter'
+                    }
+                ],
+                {
+                    title: 'spindle speed and time',
+                    xaxis: {
+                        title: 'time',
+                        type: 'date',
+                        range: [renderTime(new Date(initSpeed.created[initSpeed.created.length - 1].getTime() - 30000)), initSpeed.created[initSpeed.created.length - 1].getTime()]
+                        // range: [renderTime(-30000), initSpeed.created[initSpeed.created.length - 1].getTime()]
+                        // range: [renderTime(-30000), renderTime(20000)]
+                    },
+                    yaxis: {
+                        title: 'rpm',
+                        type: 'linear',
+                        range: [0, 6000]
+                    }
+                }
+            );
+        });
+
+        socket.on('updateSpindle', speed => {
+            Plotly.extendTraces(
+                'plot-pid',
+                {
+                    x: [
+                        [new Date(speed.created)],
+                        [new Date(speed.created)]
+                    ],
+                    y: [
+                        [speed.setpoint],
+                        [speed.rpm]
+                    ],
+                },
+                [0, 1]
+            );
+            Plotly.relayout(
+                'plot-pid',
+                {
+                    xaxis: {
+                        range: [renderTime(new Date(new Date(speed.created).getTime() - 30000)), new Date(speed.created).getTime()]
+                        // range: [renderTime(-30000), new Date(speed.created).getTime()]
+                        // range: [renderTime(-30000), renderTime(20000)]
+                    },
+                    yaxis: {
+                        range: [0, 6000]
+                    },
+                }
+            );
+        });
+    </script>
+</body>
+
+</html>
